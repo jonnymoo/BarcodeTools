@@ -46,11 +46,15 @@ namespace JonnyMuir.Function
                 var qrCode = qrWriter.Write(inputString);
                 using var ms = new MemoryStream();
                 qrCode.SaveAsPng(ms);
-                var imageData = Convert.ToBase64String(ms.ToArray());
-                // Convert Base64 string to hex string
-                string hexString = BitConverter.ToString(Encoding.UTF8.GetBytes(imageData)).Replace("-", "");
+                StringBuilder sb = new();
+                var bytes = ms.ToArray();
+                foreach (byte b in bytes)
+                {
+                    sb.Append(b.ToString("X2"));
+                }
+                var imageData = sb.ToString();
 
-                return new OkObjectResult($"{{\\pict\\pngblip0\n{hexString}\n}}");
+                return new OkObjectResult($"{{\\pict\\pngblip0\n{imageData}\n}}");
             }
             catch (Exception ex)
             {
