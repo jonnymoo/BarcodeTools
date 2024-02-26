@@ -27,10 +27,8 @@ namespace JonnyMuir.Function
         }
 
         [Function("GenerateQRCodeAsRTF")]
-        public IActionResult Run([HttpTrigger(AuthorizationLevel.Function, "get", "post")] HttpRequest req)
+        public IActionResult GenerateQRCodeAsRTF([HttpTrigger(AuthorizationLevel.Function, "get", "post")] HttpRequest req)
         {
-            _logger.LogInformation("C# HTTP trigger function processed a request.");
-
             string? inputString = req.Query["text"];
 
             if (string.IsNullOrEmpty(inputString))
@@ -53,6 +51,33 @@ namespace JonnyMuir.Function
                 string hexString = BitConverter.ToString(Encoding.UTF8.GetBytes(imageData)).Replace("-", "");
 
                 return new OkObjectResult($"{{\\pict\\pngblip0\n{hexString}\n}}");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error generating QR code");
+                return new StatusCodeResult(500);
+            }
+        }
+
+        [Function("GenerateQRCodeAsDataURL")]
+        public IActionResult GenerateQRCodeAsDataURL([HttpTrigger(AuthorizationLevel.Function, "get", "post")] HttpRequest req)
+        {
+            string? inputString = req.Query["text"];
+
+            if (string.IsNullOrEmpty(inputString))
+            {
+                return new BadRequestObjectResult("Please provide a text value in the 'text' query parameter.");
+            }
+
+            try
+            {
+                // Generate QR code image using ZXing
+                var qrWriter = new ZXing.ImageSharp.BarcodeWriter<Rgba32>();
+                qrWriter.Format = BarcodeFormat.QR_CODE;
+                qrWriter.Options.Margin = 0;
+
+                var qrCode = qrWriter.Write(inputString);
+                return new OkObjectResult(qrCode.ToBase64String(PngFormat.Instance));
             }
             catch (Exception ex)
             {
